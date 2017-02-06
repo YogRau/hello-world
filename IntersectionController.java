@@ -1,9 +1,12 @@
-package com.signal.intersection.controller;
+package com.transit.traffic.signal.intersection.controller;
 
-import com.signal.intersection.model.Intersection;
-import com.signal.intersection.model.Signal;
+import org.apache.log4j.Logger;
+import com.transit.traffic.signal.intersection.model.Intersection;
+import com.transit.traffic.signal.intersection.model.Signal;
 
 public class IntersectionController {
+	
+	final static Logger logger = Logger.getLogger(IntersectionController.class);
 	
 	private Intersection northBound = null;
 	private Intersection southBound = null;
@@ -16,42 +19,61 @@ public class IntersectionController {
 		int carCountAtSnell = 0;
 		int carCountAtWeiver = 0;
 		int greenSignalTime = 3;
-		int redSignalTimer = 1;
 		boolean turnOnRedSignal = false;
+		boolean isFirstSecOfGreenOnWeiver = false;
+		boolean isFirstSecOfGreenOnSnell = false;
+		String switchedSignalOn="";
 		IntersectionController controller = new IntersectionController();
 		controller.init();
 		controller.printIntersectionStatus(0);
-		controller.updateIntersectionStatus("Weiver", ++carCountAtWeiver);
 		
 		try {
 			for (int seconds = 1; seconds <= 20; seconds++) {
 				Thread.sleep(1000);
-				controller.printIntersectionStatus(seconds);
-				carCountAtSnell++;
-				carCountAtWeiver++;
-				controller.updateIntersectionStatus("Snell", carCountAtSnell);
-				controller.updateIntersectionStatus("Weiver", carCountAtWeiver);
-				if (seconds % greenSignalTime == 0) {
-					controller.signalOnSnell.setSignalLight(controller.signalOnSnell.getSignalLight().equals("Green")?"Red":"Green");
-					controller.signalOnWeiver.setSignalLight(controller.signalOnWeiver.getSignalLight().equals("Green")?"Red":"Green");
-					turnOnRedSignal = true;
-				} else {
-					if (controller.signalOnSnell.getSignalLight().equals("Green")) {
-						carCountAtSnell--;
-						controller.updateIntersectionStatus("Snell", carCountAtSnell);
-					}
-					
-					if (controller.signalOnWeiver.getSignalLight().equals("Green")) {
-						carCountAtWeiver--;
-						controller.updateIntersectionStatus("Weiver", carCountAtWeiver);
-					}
+				
+				if (controller.signalOnSnell.getSignalLight().equals("Red") || isFirstSecOfGreenOnSnell) {
+					carCountAtSnell++;
+					controller.updateIntersectionStatus("Snell", carCountAtSnell);
+					isFirstSecOfGreenOnSnell = false;
 				}
 				
-				if(turnOnRedSignal) {
-					controller.signalOnWeiver.setSignalLight(controller.signalOnWeiver.getSignalLight().equals("Red")?"Green":"Green");
-					controller.signalOnSnell.setSignalLight(controller.signalOnSnell.getSignalLight().equals("Green")?"Red":"Green");
+				if (controller.signalOnWeiver.getSignalLight().equals("Red") || isFirstSecOfGreenOnWeiver) {
+					carCountAtWeiver++;
+					controller.updateIntersectionStatus("Weiver", carCountAtWeiver);
+					isFirstSecOfGreenOnWeiver=false;
 				}
-
+				
+				controller.printIntersectionStatus(seconds);
+				
+				greenSignalTime--;
+				if (greenSignalTime == 0) {
+					if(controller.signalOnSnell.getSignalLight().equals("Green")) {
+						controller.signalOnSnell.setSignalLight("Red");
+						switchedSignalOn = "Snell";
+					}
+					if(controller.signalOnWeiver.getSignalLight().equals("Green")) {
+						controller.signalOnWeiver.setSignalLight("Red");
+						switchedSignalOn = "Weiver";
+					}
+					turnOnRedSignal = true;
+					continue;
+				} 
+				
+				if(turnOnRedSignal) {
+					if(controller.signalOnSnell.getSignalLight().equals("Red") && switchedSignalOn.equals("Snell")) {
+						controller.signalOnWeiver.setSignalLight("Green");
+						switchedSignalOn="";
+						isFirstSecOfGreenOnWeiver = true;
+						
+					}
+					if(controller.signalOnWeiver.getSignalLight().equals("Red") && switchedSignalOn.equals("Weiver")) {
+						controller.signalOnSnell.setSignalLight("Green");
+						switchedSignalOn="";
+						isFirstSecOfGreenOnSnell = true;
+					}
+					turnOnRedSignal = false;
+					greenSignalTime=3;
+				}
 			}
 
 		} catch (InterruptedException ex) {
@@ -72,9 +94,9 @@ public class IntersectionController {
 
 	private void init() {
 		northBound = new Intersection("N", 0);
-		southBound = new Intersection("N", 0);
-		eastBound = new Intersection("N", 0);
-		westBound = new Intersection("N", 0);
+		southBound = new Intersection("S", 0);
+		eastBound = new Intersection("E", 0);
+		westBound = new Intersection("W", 0);
 		signalOnSnell = new Signal("Snell", "Green");
 		signalOnWeiver = new Signal("Weiver", "Red");
 	}
