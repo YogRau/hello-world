@@ -1,0 +1,49 @@
+REM Script to Launch GDDM_Adj_DDR_Ranking Report generate process
+@echo on
+call %~dp0PortvalConfig.bat
+
+set FET_APP_ENV=%1
+REM "GDDM_Abc_Analyst_Pls_Mns_DDR"
+set OUTPUT_FILE_NAME=%2
+REM "pdf"
+set OUTPUT_FILE_TYPE=%3
+set DDR_BATCH_ID=%4
+
+set PATH=%JAVA_HOME%\bin;%PATH%;
+
+@echo "Path=%PATH%"
+
+set LOGPATH=%PORTVAL_HOME%\log
+@echo LOGPATH=%LOGPATH%
+
+REM FET batch specific jvm parameters
+set APP_LOG_FILE=%PORTVAL_HOME%\log\GDDMAdjDDRRankingReport.log
+set APP_ERROR_FILE=%PORTVAL_HOME%\log\GDDMAdjDDRRankingReport_err.log
+set APP_LOG_DIR=%PORTVAL_HOME%\log
+set APP_PROPERTIES_FILE=file:/F:/FET/PortvalBatch/config/FETBatch_config.properties
+set RPT_OUTPUT_LOC=F:/FET/batch/GDDM/DownloadReports/
+set RPT_DESIGN_FILE_PATH=F:\FET\PortvalBatch\config\reports\gddm_birt_adjddrrank.rptdesign
+set ENDPOINT_JSON=%PORTVAL_HOME%\config\EndPoints.json
+set SECTOR_MODEL_ID=191
+set LOCATION_CODE="NYU"
+set TEMPLATE_ELEMENT_JSON_FILE=%PORTVAL_HOME%\config\PortvalReportElementMapping.json
+set GDDM_HOLDING_ACCOUNTS_JSON_FILE=%PORTVAL_HOME%\config\GDDMHoldingAccounts.json
+
+
+@echo GDDM_Adj_DDR_Ranking Report generate process is Running in %FET_APP_ENV% Environment, Location %PORTVAL_LOCATION% and Log Folder %LOGPATH%
+
+REM Call Java Program to Archive Report
+REM set JAVA_MEM_VAR=-Xms4g -Xmx6g -XX:PermSize=256m -XX:MaxPermSize=512m -Djava.awt.headless=true -XX:+UseG1GC -XX:+UseStringCache -XX:+UseFastAccessorMethods
+set JAVA_MEM_VAR=-Xms4g -Xmx6g -XX:PermSize=256m -XX:MaxPermSize=512m -Djava.awt.headless=true
+
+
+set GDDM_JVM_PARAMS=-Dinstance=%FET_APP_ENV% -Dhost.name=%HOST_NAME% -Dbatchlogfile.name=%APP_LOG_FILE% -Dbatchlogfile.error.name=%APP_ERROR_FILE% -Dlog.level=info -Dext.properties.file=%APP_PROPERTIES_FILE% -Drpt-output=%RPT_OUTPUT_LOC% -Dbirt-design-file-path=%RPT_DESIGN_FILE_PATH% -Dendpoint-json=%ENDPOINT_JSON% -Dsector-model-id=%SECTOR_MODEL_ID% -Doutput-filename=%OUTPUT_FILE_NAME% -Doutput-filetype=%OUTPUT_FILE_TYPE% -DlocationCd=%LOCATION_CODE% -Dtemplate-elementmap-jsonfile=%TEMPLATE_ELEMENT_JSON_FILE% -Dddr-batch-id=%DDR_BATCH_ID% -Dgddm-holdingaccounts-jsonfile=%GDDM_HOLDING_ACCOUNTS_JSON_FILE%
+
+echo Executing command: java -cp "%MYCLASSPATH%" %JAVA_MEM_VAR% %GDDM_JVM_PARAMS% com.jpmorgan.equity.research.gddm.batch.main.GDDMAdjDdrRankingReportGenerator
+
+java -server -cp "%MYCLASSPATH%" %JAVA_MEM_VAR% %GDDM_JVM_PARAMS% com.jpmorgan.equity.research.gddm.batch.main.GDDMAdjDdrRankingReportGenerator
+
+set exitcode=%ERRORLEVEL%
+echo Exiting with code: %exitcode%
+
+exit /b %exitcode%
